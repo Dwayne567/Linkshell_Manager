@@ -1,0 +1,337 @@
+﻿@model LinkshellManager.ViewModels.EventViewModel
+
+<div class="container">
+    <section class="section register min-vh-100 d-flex flex-column align-items-center justify-content-center py-4">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div id="register" class="col-lg-8 col-md-6 d-flex flex-column align-items-center justify-content-center">
+                    
+                    <!-- Logo -->
+                    <div class="d-flex justify-content-center py-4">
+                        <a href="index.html" class="logo d-flex align-items-center w-auto">
+                            <img src="~/assets/img/logo.png" alt="">
+                            <span class="d-none d-lg-block pb-2">Linkshell Manager</span>
+                        </a>
+                    </div>
+                    <!-- End Logo -->
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="pt-4 pb-2">
+                                <h5 class="card-title text-center pb-0 fs-4">Edit Event</h5>
+                            </div>
+
+                            <!-- Form for editing an event -->
+                            <form asp-action="Edit" class="row g-3 needs-validation" novalidate>
+                                <!-- Linkshell selection -->
+                                <div class="col-12">
+                                    <label asp-for="Event.LinkshellId" class="form-label">Linkshell</label>
+                                    <select asp-for="Event.LinkshellId" class="form-control" required>
+                                        <option value="">Select Linkshell</option>
+                                        @foreach (var linkshell in Model.Linkshells)
+                                        {
+                                            <option value="@linkshell.Id" selected="@(linkshell.Id == Model.LinkshellId ? "selected" : null)">
+                                                @linkshell.LinkshellName
+                                            </option>
+                                        }
+                                    </select>
+                                    <div class="invalid-feedback">Please select a linkshell!</div>
+                                </div>
+
+                                <!-- Event type input -->
+                                <div class="col-12">
+                                    <label asp-for="Event.EventType" class="form-label">Event Type</label>
+                                    <select asp-for="Event.EventType" class="form-control" required>
+                                        <option value="">Please select an event type</option>
+                                        <option value="Sky">Sky</option>
+                                        <option value="Sea">Sea</option>
+                                        <option value="Dynamis">Dynamis</option>
+                                        <option value="HENM">HENM</option>
+                                        <option value="Limbus">Limbus</option>
+                                        <option value="BCNM">BCNM</option>
+                                        <option value="KSNM">KSNM</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please, enter the event type!</div>
+                                </div>
+
+                                <!-- Event title input -->
+                                <div class="col-12">
+                                    <label asp-for="Event.EventName" class="form-label">Event Title</label>
+                                    <input asp-for="Event.EventName" class="form-control" required />
+                                    <div class="invalid-feedback">Please, enter the event title!</div>
+                                </div>
+                                
+                                <!-- Event location input -->
+                                <div class="col-12">
+                                    <label asp-for="Event.EventLocation" class="form-label">Event Location</label>
+                                    <input asp-for="Event.EventLocation" class="form-control" required />
+                                    <div class="invalid-feedback">Please, enter the event location!</div>
+                                </div>
+
+                                <!-- Date and time inputs -->
+                                <div class="col-12 d-flex justify-content-around">
+                                    <div class="col-4">
+                                        <label asp-for="Event.StartTime" class="form-label">Start Time</label>
+                                        <input asp-for="Event.StartTime" type="datetime-local" class="form-control" required />
+                                        <div class="invalid-feedback">Please enter a start time!</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <label asp-for="Event.EndTime" class="form-label">End Time (Optional)</label>
+                                        <input asp-for="Event.EndTime" type="datetime-local" class="form-control" />
+                                        <div class="invalid-feedback">Please enter an end time!</div>
+                                    </div>
+                                </div>
+
+                                <!-- Duration input -->
+                                <div class="d-flex justify-content-center">
+                                    <div class="col-8">
+                                        <div class="text-center">
+                                            <label asp-for="Event.Duration" class="form-label">Duration (Optional)</label>
+                                        </div>
+                                        <input asp-for="Event.Duration" type="number" class="form-control" />
+                                        <div class="invalid-feedback">Please enter the duration!</div>
+                                    </div>
+                                </div>
+
+                                <!-- DKP per hour input -->
+                                <div class="col-12">
+                                    <label asp-for="Event.DkpPerHour" class="form-label">DKP Per Hour</label>
+                                    <input asp-for="Event.DkpPerHour" type="number" class="form-control" required />
+                                    <div class="invalid-feedback">Please enter the DKP per hour!</div>
+                                </div>
+
+                                <!-- Event details input -->
+                                <div class="col-12">
+                                    <label asp-for="Event.Details" class="form-label">Details (Optional)</label>
+                                    <textarea asp-for="Event.Details" class="form-control" rows="5" ></textarea>
+                                    <div class="invalid-feedback">Please enter event details!</div>
+                                </div>
+
+                                <!-- Event setup section -->
+                                <div class="d-flex flex-column text-center">
+                                    <h5 class="card-title">Event Setup</h5>
+
+                                    <!-- Buttons to show job groups -->
+                                    <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                                        <button type="button" class="btn btn-warning" onclick="showJobs('Tank')">Tank</button>
+                                        <button type="button" class="btn btn-info" onclick="showJobs('Heal')">Heal</button>
+                                        <button type="button" class="btn btn-success" onclick="showJobs('Support')">Support</button>
+                                        <button type="button" class="btn btn-danger" onclick="showJobs('DPS')">DPS</button>
+                                    </div>
+
+                                    <!-- Job selection section -->
+                                    <div id="selectedGroup" style="display:none;">
+                                        <h5 class="mt-3" id="groupTitle"></h5>
+                                        <div class="row">
+                                            <div class="col-md-3 job-container">
+                                                <select class="form-control" id="jobSelect">
+                                                    <!-- Options will be populated dynamically -->
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 job-subjob">
+                                                <select class="form-control" id="jobSubJob">
+                                                    <!-- Options will be populated dynamically -->
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-2 job-quantity">
+                                                <input type="number" class="form-control" id="jobQuantity" value="1">
+                                            </div>
+                                            <div class="col-md-2 add-job">
+                                                <button class="btn btn-success" type="button" onclick="addToChosenJobs()">Add to List</button>
+                                            </div>
+                                            <div class="col-md-2 add-job">
+                                                <button class="btn btn-danger" type="button" onclick="clearChosenJobs()">Clear All</button>
+                                            </div>
+                                            <div class="col-md-3 job-type">
+                                                <input hidden type="text" class="form-control" id="jobType" placeholder="JobType">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Chosen jobs list -->
+                                    <div id="chosenJobsList" style="display:none;">
+                                        <h5 class="mt-4">Chosen Jobs List</h5>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Job</th>
+                                                    <th>SubJob</th>
+                                                    <th>JobType</th>
+                                                    <th>Quantity</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="chosenJobsTableBody">
+                                                <!-- Rows will be populated dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Hidden inputs for chosen jobs -->
+                                <div id="hiddenInputs"></div>
+
+                                <!-- Submit button -->
+                                <div class="col-12">
+                                    <button class="btn btn-primary w-100" type="submit">Edit Event</button>
+                                </div>
+                            </form>
+
+                            <!-- Display ModelState Errors -->
+                            @if (!ViewData.ModelState.IsValid)
+                            {
+                                <div class="alert alert-danger">
+                                    <ul>
+                                        @foreach (var state in ViewData.ModelState)
+                                        {
+                                            @foreach (var error in state.Value.Errors)
+                                            {
+                                                <li>@error.ErrorMessage</li>
+                                            }
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        // Job arrays for different groups
+        var tankJobs = ['Any Tank', 'PLD', 'NIN', 'WAR'];
+        var healJobs = ['Any Heal', 'WHM', 'RDM', 'SMN'];
+        var supportJobs = ['Any Support', 'RDM', 'BRD', 'SMN'];
+        var dpsJobs = ['Any Dps', 'WAR', 'MNK', 'BLM', 'THF', 'DRK', 'BST', 'RNG', 'SAM', 'DRG', 'NIN', 'SMN'];
+
+        // Sub-job arrays for different groups
+        var tankSub = ['Any Sub', 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN'];
+        var healSub = ['Any Sub', 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN'];
+        var supportSub = ['Any Sub', 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN'];
+        var dpsSub = ['Any Sub', 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN'];
+
+        var chosenJobs = [];
+
+        function showJobs(group) {
+            document.getElementById('selectedGroup').style.display = 'block';
+            document.getElementById('groupTitle').innerText = group + ' Jobs';
+            var jobSelect = document.getElementById('jobSelect');
+            var subJobSelect = document.getElementById('jobSubJob');
+            var jobTypeInput = document.getElementById('jobType');
+            
+            jobSelect.innerHTML = '';
+            subJobSelect.innerHTML = '';
+            jobTypeInput.value = group;
+
+            var jobs, subJobs;
+            switch(group) {
+                case 'Tank':
+                    jobs = tankJobs;
+                    subJobs = tankSub;
+                    break;
+                case 'Heal':
+                    jobs = healJobs;
+                    subJobs = healSub;
+                    break;
+                case 'Support':
+                    jobs = supportJobs;
+                    subJobs = supportSub;
+                    break;
+                case 'DPS':
+                    jobs = dpsJobs;
+                    subJobs = dpsSub;
+                    break;
+                default:
+                    jobs = [];
+                    subJobs = [];
+            }
+
+            jobs.forEach(function(job) {
+                var option = document.createElement('option');
+                option.value = job;
+                option.text = job;
+                jobSelect.appendChild(option);
+            });
+
+            subJobs.forEach(function(subJob) {
+                var option = document.createElement('option');
+                option.value = subJob;
+                option.text = subJob;
+                subJobSelect.appendChild(option);
+            });
+        }
+
+        function addToChosenJobs() {
+            var selectedJob = document.getElementById('jobSelect').value;
+            var selectedSubJob = document.getElementById('jobSubJob').value;
+            var selectedJobType = document.getElementById('jobType').value;
+            var selectedQuantity = document.getElementById('jobQuantity').value;
+            chosenJobs.push({ JobName: selectedJob, SubJob: selectedSubJob, JobType: selectedJobType, Quantity: selectedQuantity });
+            updateChosenJobsTable();
+            updateHiddenInputs();
+        }
+
+        function clearChosenJobs() {
+            chosenJobs = [];
+            updateChosenJobsTable();
+            updateHiddenInputs();
+        }
+
+        function updateChosenJobsTable() {
+            var tableBody = document.getElementById('chosenJobsTableBody');
+            tableBody.innerHTML = '';
+            chosenJobs.forEach(function(job) {
+                var row = document.createElement('tr');
+                var jobCell = document.createElement('td');
+                jobCell.innerText = job.JobName;
+                var subJobCell = document.createElement('td');
+                subJobCell.innerText = job.SubJob;
+                var jobTypeCell = document.createElement('td');
+                jobTypeCell.innerText = job.JobType;
+                var quantityCell = document.createElement('td');
+                quantityCell.innerText = job.Quantity;
+                row.appendChild(jobCell);
+                row.appendChild(subJobCell);
+                row.appendChild(jobTypeCell);
+                row.appendChild(quantityCell);
+                tableBody.appendChild(row);
+            });
+            document.getElementById('chosenJobsList').style.display = chosenJobs.length > 0 ? 'block' : 'none';
+        }
+
+        function updateHiddenInputs() {
+            var hiddenInputsDiv = document.getElementById('hiddenInputs');
+            hiddenInputsDiv.innerHTML = '';
+            chosenJobs.forEach(function(job, index) {
+                var jobInput = document.createElement('input');
+                jobInput.type = 'hidden';
+                jobInput.name = 'Jobs[' + index + '].JobName';
+                jobInput.value = job.JobName;
+                hiddenInputsDiv.appendChild(jobInput);
+
+                var subJobInput = document.createElement('input');
+                subJobInput.type = 'hidden';
+                subJobInput.name = 'Jobs[' + index + '].SubJobName';
+                subJobInput.value = job.SubJob;
+                hiddenInputsDiv.appendChild(subJobInput);
+
+                var jobTypeInput = document.createElement('input');
+                jobTypeInput.type = 'hidden';
+                jobTypeInput.name = 'Jobs[' + index + '].JobType';
+                jobTypeInput.value = job.JobType;
+                hiddenInputsDiv.appendChild(jobTypeInput);
+
+                var quantityInput = document.createElement('input');
+                quantityInput.type = 'hidden';
+                quantityInput.name = 'Jobs[' + index + '].Quantity';
+                quantityInput.value = job.Quantity;
+                hiddenInputsDiv.appendChild(quantityInput);
+            });
+        }
+    </script>
+}

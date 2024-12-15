@@ -1,0 +1,90 @@
+﻿@model LinkshellManager.ViewModels.AuctionViewModel
+
+@{
+    ViewData["Title"] = "Create Auction";
+}
+
+<h1 class="text-center mt-4 pt-4">Create Auction</h1>
+
+<div class="row d-flex justify-content-center pt-4">
+    <div class="col-md-4">
+        <form asp-action="Create" method="post">
+            <!-- Hidden input for CreatedBy -->
+            @* <label asp-for="Auction.CreatedBy" class="form-label">Created By</label>
+            <input asp-for="Auction.CreatedBy" class="form-control text-center mb-4" value="@characterName" readonly /> *@
+
+            <!-- Linkshell selection -->
+            <div class="col-12">
+                <label asp-for="LinkshellId" class="form-label">Linkshell</label>
+                <select asp-for="LinkshellId" class="form-control" required>
+                    <option value="@Model.LinkshellId">Select Linkshell</option>
+                    @foreach (var linkshell in Model.Linkshells)
+                    {
+                        <option value="@linkshell.Id">@linkshell.LinkshellName</option>
+                    }
+                </select>
+                <div class="invalid-feedback">Please select a linkshell!</div>
+            </div>
+            <div class="form-group">
+                <label asp-for="Auction.AuctionTitle" class="control-label"></label>
+                <input asp-for="Auction.AuctionTitle" class="form-control" />
+                <span asp-validation-for="Auction.AuctionTitle" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Auction.StartTime" class="control-label"></label>
+                <input asp-for="Auction.StartTime" type="datetime-local" class="form-control" />
+                <span asp-validation-for="Auction.StartTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Auction.EndTime" class="control-label"></label>
+                <input asp-for="Auction.EndTime" type="datetime-local" class="form-control" />
+                <span asp-validation-for="Auction.EndTime" class="text-danger"></span>
+            </div>
+
+            <h4 class="text-center mt-4 pt-4">Auction Items</h4>
+            <div id="auction-items">
+                @for (int i = 0; i < Model.AuctionItems.Count; i++)
+                {
+                    <div class="form-group">
+                        <label asp-for="AuctionItems[i].ItemName" class="control-label"></label>
+                        <input asp-for="AuctionItems[i].ItemName" class="form-control" />
+                        <span asp-validation-for="AuctionItems[i].ItemName" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="AuctionItems[i].StartingBidDkp" class="control-label"></label>
+                        <input asp-for="AuctionItems[i].StartingBidDkp" class="form-control" />
+                        <span asp-validation-for="AuctionItems[i].StartingBidDkp" class="text-danger"></span>
+                    </div>
+                }
+            </div>
+            <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-primary mt-4" onclick="addItem()">Add Item</button>
+            </div>
+
+            <div class="d-flex justify-content-center">
+                <button type="submit" class="btn btn-success mt-4">Create Auction</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function addItem() {
+        var auctionItemsDiv = document.getElementById('auction-items');
+        var itemCount = auctionItemsDiv.children.length / 2; // Assuming each item has 2 form groups
+        var newItemHtml = `
+            <div class="form-group">
+                <label for="AuctionItems_${itemCount}__ItemName" class="control-label">Item Name</label>
+                <input name="AuctionItems[${itemCount}].ItemName" class="form-control" />
+                <span class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label for="AuctionItems_${itemCount}__StartingBidDkp" class="control-label">Starting Bid DKP</label>
+                <input name="AuctionItems[${itemCount}].StartingBidDkp" class="form-control" />
+                <span class="text-danger"></span>
+            </div>`;
+        auctionItemsDiv.insertAdjacentHTML('beforeend', newItemHtml);
+    }
+</script>
+}

@@ -1,0 +1,36 @@
+﻿@using System.Security.Claims
+@model LinkshellManager.ViewModels.LinkshellViewModel
+
+@{
+    ViewData["Title"] = "Create Linkshell";
+}
+<div class="container" style="max-width: 90%; margin: 0 auto;">
+    <h1 class="my-5">Create Linkshell</h1>
+
+    <h4 class="mt-5">Linkshell Details</h4>
+    <hr />
+    <div class="row d-flex justify-content-center">
+        <div class="col-md-4">
+            <form asp-action="Create">
+                <div class="form-group d-flex flex-column justify-content-center pt-5 mb-3">
+                    <div class="text-center">
+                        <label asp-for="LinkshellName" class="control-label mb-3" style="font-size: 18px;">Linkshell Name</label>
+                    </div>
+                    <input asp-for="LinkshellName" class="form-control text-center" />
+                    <span asp-validation-for="LinkshellName" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <input type="hidden" asp-for="AppUserId" value="@User.FindFirstValue(ClaimTypes.NameIdentifier)" />
+                </div>
+                <div class="form-group d-flex justify-content-end">
+                    <input type="submit" value="Create" class="btn btn-primary" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

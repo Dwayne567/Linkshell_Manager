@@ -1,0 +1,32 @@
+﻿@model IEnumerable<LinkshellManager.Models.Linkshell>
+<div class="container" style="max-width: 90%; margin: 0 auto;">
+    <h2 class="my-5">Linkshells</h2>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Linkshell Name</th>
+                <th>Total Members</th>
+                <th>Total Items</th>
+                <th>Revenue</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var linkshell in Model)
+            {
+                <tr>
+                    <td>@linkshell.LinkshellName</td>
+                    <td>@linkshell.TotalMembers</td>
+                    <td>@linkshell.TotalItems</td>
+                    <td>@linkshell.Revenue</td>
+                    <td>
+                        <a asp-controller="Linkshell" asp-action="Details" asp-route-id="@linkshell.Id">Details</a> |
+                        <a asp-controller="Linkshell" asp-action="Edit" asp-route-id="@linkshell.Id">Edit</a> |
+                        <a asp-controller="Linkshell" asp-action="Delete" asp-route-id="@linkshell.Id">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

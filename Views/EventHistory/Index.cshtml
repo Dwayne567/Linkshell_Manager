@@ -1,0 +1,36 @@
+﻿@model IEnumerable<LinkshellManager.Models.EventHistory>
+
+@{
+    ViewData["Title"] = "Event Histories";
+}
+<div class="container pt-5 mt-5" style="max-width: 90%; margin: 0 auto;">
+    <h2 class="mb-4">Event Histories</h2>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Event Type</th>
+                <th>Event Location</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var eventHistory in Model)
+            {
+                <tr>
+                    <td>@eventHistory.EventName</td>
+                    <td>@eventHistory.EventType</td>
+                    <td>@eventHistory.EventLocation</td>
+                    <td>@eventHistory.StartTime</td>
+                    <td>@eventHistory.EndTime</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@eventHistory.Id" class="btn btn-primary">View Details</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

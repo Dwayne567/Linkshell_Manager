@@ -1,0 +1,227 @@
+﻿@model List<LinkshellManager.ViewModels.EventViewModel>
+
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<AppUser> UserManager
+
+@{
+    var currentUserId = UserManager.GetUserId(User);
+}
+<h2 class="text-center my-4">Events</h2>
+
+<div class="container">
+    <div class="row">
+        @foreach (var eventViewModel in Model)
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="card-title mb-0 text-center fs-4">@eventViewModel.Event.EventName</h3>
+                    </div>
+
+                    <div class="card-body">
+                        @if (eventViewModel.Event.CommencementStartTime != null)
+                        {
+                            <h4 class="text-center pt-2" style="color: #32CD32; text-shadow: 0 0 3px #32CD32, 0 0 5px #32CD32;">
+                                Event is Live</h4>
+                        }                                                
+
+                        <div class="card-text d-flex justify-content-start p-2">
+                            <strong>Created By:</strong> <span class="mx-2 badge bg-secondary">@eventViewModel.CreatorCharacterName</span>
+                        </div>
+                        <div class="card-text d-flex justify-content-between bg-light p-2">
+                            <div>
+                                <strong>Event Type:</strong> <span class="badge bg-secondary">@eventViewModel.Event.EventType</span>
+                            </div>
+                            <div>
+                                <strong>Location:</strong> <span class="badge bg-secondary">@eventViewModel.Event.EventLocation</span>
+                            </div>
+                        </div>
+                        <div class="card-text d-flex justify-content-between p-2">
+                            <div>
+                                <strong>Start:</strong> <span class="badge bg-secondary">@eventViewModel.Event.StartTime?.ToString("dddd, MMM dd h:mm tt")</span>
+                            </div>
+                            <div>
+                                <strong>End:</strong> <span class="badge bg-secondary">@eventViewModel.Event.EndTime?.ToString("dddd, MMM dd h:mm tt")</span>
+                            </div>
+                        </div>
+                        <div class="card-text d-flex justify-content-between bg-light p-2">
+                            <div>
+                                <strong>Duration:</strong> <span class="badge bg-secondary">@eventViewModel.Event.Duration hours</span>
+                            </div>
+                        </div>
+                        <div class="card-text d-flex justify-content-between p-2">
+                            <div>
+                                <strong>DKP Per Hour:</strong> <span class="badge bg-secondary">@eventViewModel.Event.DkpPerHour</span>
+                            </div>
+                            <div>
+                                <strong>Details:</strong> <span class="badge bg-secondary">@eventViewModel.Event.Details</span>
+                            </div>
+                        </div>
+
+                        <div class="jobs-section collapse" id="jobs-@eventViewModel.Event.Id">
+                            <h4 class="mt-4 mb-4 fs-5">Setup</h4>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Main</th>
+                                        <th>Sub</th>
+                                        <th>Role</th>
+                                        <th>Enlisted</th>
+                                        <th>Names</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var job in eventViewModel.Jobs)
+                                    {
+                                        <tr>
+                                            <td>@job.JobName</td>
+                                            <td>@job.SubJobName</td>
+                                            <td>@job.JobType</td>
+                                            <td>@(job.SignedUp ?? 0) / @job.Quantity</td>
+                                            <td>
+                                                @if (job.Enlisted != null)
+                                                {
+                                                    @foreach (var name in job.Enlisted)
+                                                    {
+                                                        <div>@name</div>
+                                                    }
+                                                }
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var characterName = ViewBag.CharacterName as string;
+                                                    var userAlreadySignedUp = eventViewModel.Jobs.Any(j => j.Enlisted != null &&
+                                                    j.Enlisted.Contains(characterName));
+                                                }
+                                                @if (!userAlreadySignedUp)
+                                                {
+                                                    <form asp-action="SignUp" asp-controller="Event" method="post">
+                                                        <input type="hidden" name="jobId" value="@job.Id" />
+                                                        <input type="hidden" name="eventId" value="@eventViewModel.Event.Id" />
+                                                        <button type="submit" class="btn btn-primary">Sign Up</button>
+                                                    </form>
+                                                }
+                                                else if (job.Enlisted != null && job.Enlisted.Contains(characterName))
+                                                {
+                                                    <form asp-action="Unsign" asp-controller="Event" method="post">
+                                                        <input type="hidden" name="jobId" value="@job.Id" />
+                                                        <input type="hidden" name="eventId" value="@eventViewModel.Event.Id" />
+                                                        <button type="submit" class="btn btn-danger">Unsign</button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-secondary" disabled>Already Signed
+                                                        Up</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        @if (eventViewModel.Event.CommencementStartTime == null)
+                        {
+                            <button type="button" class="btn btn-primary" data-toggle="collapse"
+                                data-target="#jobs-@eventViewModel.Event.Id">
+                                View Jobs
+                            </button>
+                            @if (eventViewModel.Event.CommencementStartTime == null && eventViewModel.Event.CreatorUserId == currentUserId)
+                            {
+                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#confirmModal-@eventViewModel.Event.Id">Start Event</button>
+                                <a href="@Url.Action("Edit", "Event", new { id = eventViewModel.Event.Id })"
+                                    class="btn btn-warning">
+                                    Edit Event
+                                </a>
+                                <!-- Cancel Event Form -->
+                                <form asp-action="CancelEvent" asp-controller="Event" method="post" style="display:inline;">
+                                    <input type="hidden" name="eventId" value="@eventViewModel.Event.Id" />
+                                    <button type="submit" class="btn btn-danger"
+                                        onclick="return confirm('Are you sure you want to cancel this event?');">Cancel
+                                        Event</button>
+                                </form>
+                            }
+
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Start", "Event", new { eventId = eventViewModel.Event.Id })"
+                                class="btn btn-success">
+                                View Event
+                            </a>
+                        }
+                    </div>
+
+                    <!-- Confirmation Modal -->
+                    <div class="modal fade" id="confirmModal-@eventViewModel.Event.Id" tabindex="-1" role="dialog" aria-labelledby="confirmModalLabel-@eventViewModel.Event.Id" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="confirmModalLabel-@eventViewModel.Event.Id">Confirm Attendance</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="confirmForm-@eventViewModel.Event.Id" asp-action="ConfirmAttendance" asp-controller="Event" method="post">
+                                        <input type="hidden" name="eventId" value="@eventViewModel.Event.Id" />
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Character Name</th>
+                                                    <th>Job</th>
+                                                    <th>Sub Job</th>
+                                                    <th>Job Type</th>
+                                                    <th>Confirm</th>
+                                                    <th>Deny</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var userEvent in @eventViewModel.AppUserEvents.Where(aue => aue.EventId == eventViewModel.Event.Id))
+                                                {
+                                                    <tr>
+                                                        <td>@userEvent.CharacterName</td>
+                                                        <td>@userEvent.JobName</td>
+                                                        <td>@userEvent.SubJobName</td>
+                                                        <td>@userEvent.JobType</td>
+                                                        <td>
+                                                            <input type="radio" name="attendance_@userEvent.CharacterName" value="confirm" checked />
+                                                        </td>
+                                                        <td>
+                                                            <input type="radio" name="attendance_@userEvent.CharacterName" value="deny" />
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-primary" onclick="submitConfirmForm('@eventViewModel.Event.Id')">Confirm Attendance</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        console.log("Detected Time Zone:", timeZone); // Log the detected time zone
+        document.getElementById('timeZone').value = timeZone;
+    });
+
+    function submitConfirmForm(eventId) {
+        document.getElementById('confirmForm-' + eventId).submit();
+    }
+</script>
+}

@@ -1,0 +1,52 @@
+﻿@model LinkshellManager.ViewModels.ProfileViewModel
+
+@{
+    ViewData["Title"] = "Profile";
+}
+<div class="container" style="max-width: 90%; margin: 0 auto;">
+    <div class="text-center">
+        <h2 class="pt-5 my-5">Profile</h2>
+    </div>
+
+    @if (Model.ProfileImageData != null)
+    {
+        <div class="d-flex justify-content-center my-4">
+            <img id="profileImage" src="data:image;base64,@Convert.ToBase64String(Model.ProfileImageData)" alt="Profile Image"
+                class="img-thumbnail" />
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-center my-4">
+            <img id="profileImage" src="#" alt="Profile Image" class="img-thumbnail" style="display: none;" />
+        </div>
+    }
+
+    <form asp-action="UpdateProfile" method="post" enctype="multipart/form-data">
+        <div class="form-group mt-5">
+            <label asp-for="CharacterName">Character Name</label>
+            <input asp-for="CharacterName" class="form-control mt-2" />
+        </div>
+        <div class="form-group mt-5">
+            <label asp-for="ProfileImage">Profile Image</label>
+            <input asp-for="ProfileImage" type="file" class="form-control mt-2" onchange="previewImage(event)" />
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function previewImage(event) {
+            var reader = new FileReader();
+            reader.onload = function() {
+                var output = document.getElementById('profileImage');
+                output.src = reader.result;
+                output.style.display = 'block';
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+    </script>
+}

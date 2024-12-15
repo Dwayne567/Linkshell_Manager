@@ -1,0 +1,432 @@
+﻿@model LinkshellManager.ViewModels.TodManagerViewModel
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1 class="p-3 tod-manager-title text-center mb-3">ToD Manager</h1>
+    </div><!-- End Page Title -->
+
+    <section class="tod-timers">
+        <div class="tod-timers-row d-flex justify-content-center">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-body mt-3">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th><b>N</b>ame</th>
+                                    <th>Day #</th>
+                                    <th>ToD</th>
+                                    <th>Cooldown</th>
+                                    <th>Next Window</th>
+                                    <th>Interval</th>
+                                    <th>Countdown</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.TodItems != null && Model.TodItems.Any())
+                                {
+                                    @foreach (var item in Model.TodItems)
+                                    {
+                                        var repopDateTime = item.RepopTime;
+                                        <tr>
+                                            <td>@item.MonsterName</td>
+                                            <td>@item.DayNumber</td>
+                                            <td>@item.Time</td>
+                                            <td>@item.Cooldown</td>
+                                            <td>@item.RepopTime</td>
+                                            <td>@item.Interval</td>
+                                            <td>
+                                                <span id="countdown-@item.Id" class="countdown-timer" data-endtime="@repopDateTime?.ToString("yyyy-MM-ddTHH:mm:ss")"></span>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-primary btn-sm edit-btn" data-id="@item.Id">Edit ToD</button>
+                                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Delete ToD</a>
+                                                @if (item.Claim)
+                                                {
+                                                    <button type="button" class="btn btn-info btn-sm view-loot-btn" data-id="@item.Id">View Loot</button>
+                                                    <button type="button" class="btn btn-warning btn-sm edit-loot-btn" data-id="@item.Id">Edit Loot</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="8">No ToD items found.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<!-- Edit Tod Modal -->
+<div class="modal fade" id="editTodModal" tabindex="-1" aria-labelledby="editTodModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTodModalLabel">Edit ToD</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTodForm" asp-action="Edit" asp-controller="Tod" method="post">
+                    <input type="hidden" asp-for="Tod.Id" id="editTodId" />
+                    <div class="mb-3">
+                        <label asp-for="Tod.LinkshellId" class="form-label"></label>
+                        <select asp-for="Tod.LinkshellId" class="form-select" id="editLinkshellId" required>
+                            @foreach (var linkshell in Model.Linkshells)
+                            {
+                                <option value="@linkshell.Id">@linkshell.LinkshellName</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Tod.LinkshellId" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Tod.MonsterName" class="form-label"></label>
+                        <select asp-for="Tod.MonsterName" class="form-control" id="editMonsterName" required>
+                            <option value="Fafnir">Fafnir</option>
+                            <option value="Nidhogg">Nidhogg</option>
+                            <option value="Behemoth">Behemoth</option>
+                            <option value="King Behemoth">King Behemoth</option>
+                            <option value="Adamantoise">Adamantoise</option>
+                            <option value="Aspidochelone">Aspidochelone</option>
+                            <option value="Tiamat">Tiamat</option>
+                            <option value="Jormungand">Jormungand</option>
+                            <option value="Vrtra">Vrtra</option>
+                            <option value="King Arthro">King Arthro</option>
+                            <option value="Simurgh">Simurgh</option>
+                        </select>
+                        <span asp-validation-for="Tod.MonsterName" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3" id="editDayNumberRow">
+                        <label asp-for="Tod.DayNumber" class="form-label"></label>
+                        <input asp-for="Tod.DayNumber" class="form-control" type="number" id="editDayNumber" required />
+                        <span asp-validation-for="Tod.DayNumber" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Tod.Claim" class="col-sm-2 col-form-label">Claim</label>
+                        <select asp-for="Tod.Claim" class="form-select" id="editClaim">
+                            <option value="" selected disabled>Select an option</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                        <span asp-validation-for="Tod.Claim" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Tod.Time" class="form-label"></label>
+                        <input asp-for="Tod.Time" class="form-control" type="datetime-local" id="editTime" required />
+                        <span asp-validation-for="Tod.Time" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Tod.Cooldown" class="form-label"></label>
+                        <input asp-for="Tod.Cooldown" class="form-control" id="editCooldown" readonly />
+                        <span asp-validation-for="Tod.Cooldown" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Tod.RepopTime" class="form-label"></label>
+                        <input asp-for="Tod.RepopTime" class="form-control" type="datetime-local" id="editRepopTime" readonly />
+                        <span asp-validation-for="Tod.RepopTime" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Tod.Interval" class="form-label"></label>
+                        <input asp-for="Tod.Interval" class="form-control" id="editInterval" readonly />
+                        <span asp-validation-for="Tod.Interval" class="text-danger"></span>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Save changes</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- View Loot Modal -->
+    <div class="modal fade" id="viewLootModal" tabindex="-1" aria-labelledby="viewLootModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewLootModalLabel">Loot Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Item Winner</th>
+                                <th>DKP Spent</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lootDetailsTableBody">
+                            <!-- Loot details will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Loot Modal -->
+    <div class="modal fade" id="editLootModal" tabindex="-1" aria-labelledby="editLootModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editLootModalLabel">Edit Loot Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editLootForm" asp-action="EditLootDetails" asp-controller="Tod" method="post">
+                        <input type="hidden" name="Tod.Id" id="editLootTodId" />
+                        <div id="editLootDetailsContainer">
+                            <!-- Loot details will be populated here -->
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <button type="button" id="add-edit-loot-detail" class="btn btn-primary">Add Loot Detail</button>
+                            <button type="button" id="remove-edit-loot-detail" class="btn btn-danger">Remove Loot Detail</button>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success">Save changes</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main><!-- End #main -->
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const countdownElements = document.querySelectorAll('.countdown-timer');
+        countdownElements.forEach(function (element) {
+            const endtime = element.getAttribute('data-endtime');
+            if (endtime) {
+                startCountdown(endtime, element);
+            }
+        });
+
+        const editButtons = document.querySelectorAll('.edit-btn');
+        editButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const id = this.getAttribute('data-id');
+                openEditModal(id);
+            });
+        });
+
+        const viewLootButtons = document.querySelectorAll('.view-loot-btn');
+        viewLootButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const id = this.getAttribute('data-id');
+                openViewLootModal(id);
+            });
+        });
+
+        const editLootButtons = document.querySelectorAll('.edit-loot-btn');
+        editLootButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const id = this.getAttribute('data-id');
+                openEditLootModal(id);
+            });
+        });
+
+        const addLootDetailButton = document.getElementById('add-edit-loot-detail');
+        const removeLootDetailButton = document.getElementById('remove-edit-loot-detail');
+        const editLootDetailsContainer = document.getElementById('editLootDetailsContainer');
+
+        addLootDetailButton.addEventListener('click', function () {
+            const index = editLootDetailsContainer.children.length;
+            const todId = document.getElementById('editLootForm').getAttribute('data-tod-id');
+            const lootDetailDiv = document.createElement('div');
+            lootDetailDiv.classList.add('loot-detail');
+            lootDetailDiv.innerHTML = `
+
+                <input  name="TodLootDetails[${index}].TodId" value="${todId}" />
+                <div class="row mb-3">
+                    <label for="itemName" class="col-sm-2 col-form-label">Item Name</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" name="TodLootDetails[${index}].ItemName" required />
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="itemWinner" class="col-sm-2 col-form-label">Item Winner</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" name="TodLootDetails[${index}].ItemWinner" required />
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="winningDkpSpent" class="col-sm-2 col-form-label">DKP Spent</label>
+                    <div class="col-sm-10">
+                        <input type="number" class="form-control" name="TodLootDetails[${index}].WinningDkpSpent" required />
+                    </div>
+                </div>
+            `;
+            editLootDetailsContainer.appendChild(lootDetailDiv);
+        });
+
+        const todTimeInput = document.getElementById('editTime');
+        const monsterNameInput = document.getElementById('editMonsterName');
+        const cooldownInput = document.getElementById('editCooldown');
+        const repopTimeInput = document.getElementById('editRepopTime');
+        const intervalInput = document.getElementById('editInterval');
+        const dayNumberRow = document.getElementById('editDayNumberRow');
+
+        function updateRepopTime() {
+            const todTime = new Date(todTimeInput.value);
+            if (!isNaN(todTime.getTime())) {
+                let hoursToAdd = 22;
+                const monsterName = monsterNameInput.value;
+
+                if (monsterName === "Tiamat" || monsterName === "Jormungand" || monsterName === "Vrtra") {
+                    hoursToAdd = 72;
+                    cooldownInput.value = "72 Hour";
+                    intervalInput.value = "1 Hour";
+                    dayNumberRow.style.display = "none";
+                } else if (monsterName === "King Behemoth" || monsterName === "Aspidochelone" || monsterName === "Nidhogg") {
+                    hoursToAdd = 22;
+                    cooldownInput.value = "22 Hour";
+                    intervalInput.value = "10 Min";
+                    dayNumberRow.style.display = "none";
+                } else {
+                    cooldownInput.value = "22 Hour";
+                    intervalInput.value = "10 Min";
+                    dayNumberRow.style.display = "flex";
+                }
+
+                const repopTime = new Date(todTime.getTime() + hoursToAdd * 60 * 60 * 1000);
+                
+                // Adjust for timezone offset
+                const timezoneOffset = todTime.getTimezoneOffset() * 60 * 1000;
+                const adjustedRepopTime = new Date(repopTime.getTime() - timezoneOffset);
+                
+                repopTimeInput.value = adjustedRepopTime.toISOString().slice(0, 16);
+            }
+        }
+
+        todTimeInput.addEventListener('change', updateRepopTime);
+        monsterNameInput.addEventListener('change', updateRepopTime);
+
+        removeLootDetailButton.addEventListener('click', function () {
+            if (editLootDetailsContainer.children.length > 0) {
+                editLootDetailsContainer.removeChild(editLootDetailsContainer.lastChild);
+            }
+        });
+    });
+
+    function startCountdown(endtime, element) {
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = new Date(endtime).getTime() - now;
+
+            if (distance < 0) {
+                element.innerHTML = "EXPIRED";
+                clearInterval(interval);
+            } else {
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                element.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            }
+        }
+
+        const interval = setInterval(updateCountdown, 1000);
+        updateCountdown();
+    }
+
+    function openEditModal(id) {
+        // Fetch the ToD details and populate the form
+        fetch(`/Tod/GetTod/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('editTodId').value = data.id;
+                document.getElementById('editLinkshellId').value = data.linkshellId;
+                document.getElementById('editMonsterName').value = data.monsterName;
+                document.getElementById('editDayNumber').value = data.dayNumber;
+                document.getElementById('editClaim').value = data.claim;
+                document.getElementById('editTime').value = data.time;
+                document.getElementById('editCooldown').value = data.cooldown;
+                document.getElementById('editRepopTime').value = data.repopTime;
+                document.getElementById('editInterval').value = data.interval;
+
+                // Show the modal
+                const editTodModal = new bootstrap.Modal(document.getElementById('editTodModal'));
+                editTodModal.show();
+            });
+    }
+
+    function openViewLootModal(id) {
+        // Fetch the loot details and populate the table
+        fetch(`/Tod/GetLootDetails/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                const lootDetailsTableBody = document.getElementById('lootDetailsTableBody');
+                lootDetailsTableBody.innerHTML = '';
+                data.forEach(detail => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${detail.itemName}</td>
+                        <td>${detail.itemWinner}</td>
+                        <td>${detail.winningDkpSpent}</td>
+                    `;
+                    lootDetailsTableBody.appendChild(row);
+                });
+
+                // Show the modal
+                const viewLootModal = new bootstrap.Modal(document.getElementById('viewLootModal'));
+                viewLootModal.show();
+            });
+    }
+
+    function openEditLootModal(id) {
+        // Fetch the loot details and populate the form
+        fetch(`/Tod/GetLootDetails/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                const editLootDetailsContainer = document.getElementById('editLootDetailsContainer');
+                editLootDetailsContainer.innerHTML = '';
+                data.forEach((detail, index) => {
+                    const lootDetailDiv = document.createElement('div');
+                    lootDetailDiv.classList.add('loot-detail');
+                    lootDetailDiv.innerHTML = `
+                        <input type="hidden" name="TodLootDetails[${index}].Id" value="${detail.id}" />
+                        <input type="hidden" name="TodLootDetails[${index}].TodId" value="${detail.todId}" />
+                        <div class="row mb-3">
+                            <label for="itemName" class="col-sm-2 col-form-label">Item Name</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" name="TodLootDetails[${index}].ItemName" value="${detail.itemName}" required />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="itemWinner" class="col-sm-2 col-form-label">Item Winner</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" name="TodLootDetails[${index}].ItemWinner" value="${detail.itemWinner}" required />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="winningDkpSpent" class="col-sm-2 col-form-label">DKP Spent</label>
+                            <div class="col-sm-10">
+                                <input type="number" class="form-control" name="TodLootDetails[${index}].WinningDkpSpent" value="${detail.winningDkpSpent}" required />
+                            </div>
+                        </div>
+                    `;
+                    editLootDetailsContainer.appendChild(lootDetailDiv);
+                });
+                const editLootForm = document.getElementById('editLootForm');
+                document.getElementById('editLootTodId').value = id;
+                editLootForm.setAttribute('data-tod-id', id);
+                var editLootModal = new bootstrap.Modal(document.getElementById('editLootModal'));
+                editLootModal.show();
+            });
+    }
+</script>

@@ -1,0 +1,550 @@
+﻿@model LinkshellManager.ViewModels.EventViewModel
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<LinkshellManager.Models.AppUser> UserManager
+@{
+    ViewData["Title"] = "Event Start";
+
+    var user = await UserManager.GetUserAsync(User);
+    var characterName = user?.CharacterName;
+    var isUserRegistered = Model.AppUserEvents.Any(aue => aue.CharacterName == characterName);
+    var currentUserId = UserManager.GetUserId(User);
+
+    // Calculate the global duration
+    var commencementStartTime = Model.CommencementStartTime;
+    var currentTime = DateTime.Now;
+    var globalDuration = currentTime - commencementStartTime;
+    var totalGlobalHours = globalDuration?.TotalHours ?? 0;
+    var totalGlobalMinutes = globalDuration?.TotalMinutes ?? 0;
+    var globalDkp = (totalGlobalMinutes / 60) * (Model.Event.DkpPerHour ?? 0);
+}
+<style>
+    .hidden-dkp {
+        visibility: hidden;
+    }
+</style>
+
+<h2 class="text-center pt-3 my-3">@ViewData["Title"]</h2>
+
+<!-- Display the event name -->
+<h3 class="text-center my-3">@Model.Event.EventName</h3>
+
+<div class="global-timer text-center">
+    <h3>Global Timer: <span id="global-timer">00:00:00</span></h3>
+</div>
+
+<!-- Quick Join Form -->
+@if (!isUserRegistered)
+{
+    <!-- Form for quick join -->
+    <div class="col-md-8 mx-auto my-5">
+        <form asp-action="QuickJoin" asp-controller="Event" method="post" class="mb-3 p-3 border rounded shadow-sm">
+            <input type="hidden" name="eventId" value="@Model.Event.Id" />
+            <input type="hidden" name="characterName" value="@characterName" />
+
+            <!-- Buttons to show job groups -->
+            <div class="d-flex justify-content-center mb-3">
+                <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                    <button type="button" class="btn btn-warning" onclick="showJobs('Tank')">Tank</button>
+                    <button type="button" class="btn btn-info" onclick="showJobs('Heal')">Heal</button>
+                    <button type="button" class="btn btn-success" onclick="showJobs('Support')">Support</button>
+                    <button type="button" class="btn btn-danger" onclick="showJobs('DPS')">DPS</button>
+                </div>
+            </div>
+
+            <!-- Job selection section -->
+            <div class="d-flex justify-content-center">
+                <div id="selectedGroup" style="display:none;" class="w-100">
+                    <h5 class="mt-3 text-center" id="groupTitle"></h5>
+                    <div class="d-flex justify-content-center">
+                        <div class="col-md-4 job-container">
+                            <select class="form-control" id="jobSelect" name="jobName">
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="col-md-4 job-subjob">
+                            <select class="form-control" id="jobSubJob" name="subJobName">
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4 job-type">
+                        <input type="text" class="form-control" id="jobType" name="jobType" placeholder="JobType" hidden>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit button -->
+            <div class="col-12 mt-3 d-flex justify-content-center">
+                <button type="submit" class="btn btn-primary w-50" id="quickJoinButton" disabled>Quick Join</button>
+            </div>
+        </form>
+    </div>
+}
+
+<!-- Event Participants Display -->
+<div class="col-md-10 mx-auto">
+    <h3 class="mt-5">Event Participants</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Job</th>
+                <th>Role</th>
+                <th>Timer</th>
+                <th>Progress</th>
+                <th>DKP</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var appUserEvent in Model.AppUserEvents.Where(aue => !aue.IsQuickJoin))
+            {
+                <tr>
+                    <td>@appUserEvent.CharacterName</td>
+                    <td>@(appUserEvent.JobName) / @appUserEvent.SubJobName</td>
+                    <td>@appUserEvent.JobType</td>
+                    @* TIMER *@
+                    <td>
+                        <span id="timer-@appUserEvent.CharacterName">00:00:00</span>
+                    </td>
+                    @* PROGRESS BAR *@
+                    <td>
+                        <div class="progress mt-3">
+                            <div id="progress-bar-@appUserEvent.CharacterName" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </td>
+                    @* DKP *@
+                    <td>
+                        <span id="dkp-@appUserEvent.CharacterName" class="hidden-dkp">@appUserEvent.EventDkp ?? 0</span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    
+    <!-- New Joins Display -->
+    <h4 class="mt-5">New Joins</h4>
+    <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Job</th>
+                    <th>Role</th>
+                    <th>Timer</th>
+                    <th>Progress</th>
+                    <th>DKP</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var userEvent in Model.AppUserEvents.Where(aue => aue.IsQuickJoin))
+            {
+                <tr>
+                    <td>@userEvent.CharacterName</td>
+                    <td>@userEvent.JobName / @userEvent.SubJobName</td>
+                    <td>@userEvent.JobType</td>
+                    <td>
+                        <span id="timer-@userEvent.CharacterName">00:00:00</span>
+                    </td>
+                    @* PROGRESS *@
+                    <td>
+                        <div class="progress mt-3">
+                            <div id="progress-bar-@userEvent.CharacterName" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </td>
+                    @* DKP *@
+                    <td>
+                        <span id="dkp-@userEvent.CharacterName" class="hidden-dkp">@userEvent.EventDkp ?? 0</span>
+                    </td>
+                    <td>
+                        @if (userEvent.IsVerified == null)
+                        {
+                            <span>Pending Verification</span>
+                        }
+                        else
+                        {
+                            <span>@(userEvent.IsVerified == true ? "Confirmed" : "Denied")</span>
+                        }
+                    </td>
+                    <td>
+                        @if (Model.Event.CreatorUserId == currentUserId)
+                        {
+                            @if (userEvent.IsVerified == null)
+                            {
+                                <form asp-action="VerifyUser" asp-controller="Event" method="post" style="display:inline;">
+                                    <input type="hidden" name="eventId" value="@Model.Event.Id" />
+                                    <input type="hidden" name="characterName" value="@userEvent.CharacterName" />
+                                    <input type="hidden" name="isVerified" value="true" />
+                                    <button type="submit" class="btn btn-success">Confirm</button>
+                                </form>
+                                <form asp-action="VerifyUser" asp-controller="Event" method="post" style="display:inline;">
+                                    <input type="hidden" name="eventId" value="@Model.Event.Id" />
+                                    <input type="hidden" name="characterName" value="@userEvent.CharacterName" />
+                                    <input type="hidden" name="isVerified" value="false" />
+                                    <button type="submit" class="btn btn-danger">Deny</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-action="UndoVerification" asp-controller="Event" method="post" style="display:inline;">
+                                    <input type="hidden" name="eventId" value="@Model.Event.Id" />
+                                    <input type="hidden" name="characterName" value="@userEvent.CharacterName" />
+                                    <button type="submit" class="btn btn-warning">Undo</button>
+                                </form>
+                            }
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+    </table>
+</div>
+
+<!-- Loot Details Form -->
+<div class="col-md-10 mx-auto mt-4">
+    <h3 class="text-center mt-5 mb-3">Submit Loot Details</h3>
+    <div class="d-flex justify-content-center mt-3">
+        <button class="btn btn-secondary mb-3" type="button" onclick="toggleLootForm()">Toggle Loot Details Form</button>
+    </div>
+    <form id="lootDetailsForm" asp-action="SubmitLootDetails" asp-controller="Event" method="post" class="mb-3 p-3 border rounded shadow-sm" style="display: none;">
+        <input type="hidden" name="eventId" value="@Model.Event.Id" />
+        <div class="form-group">
+            <label for="itemName">Item Name</label>
+            <input type="text" class="form-control" id="itemName" name="itemName" required />
+        </div>
+        <div class="form-group">
+            <label for="itemWinner">Item Winner</label>
+            <select class="form-control" id="itemWinner" name="itemWinner" required>
+                <option value="">Select Item Winner</option>
+                @foreach (var member in Model.LinkshellMembers)
+                {
+                    <option value="@member">@member</option>
+                }
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="winningDkpSpent">DKP Spent</label>
+            <input type="number" class="form-control" id="winningDkpSpent" name="winningDkpSpent" required />
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+    </form>
+</div>
+
+<!-- Loot Details Table -->
+<div class="col-md-10 mx-auto mt-4">
+    <h3 class="my-3">Loot Earned</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Item Winner</th>
+                <th>DKP Spent</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var lootDetail in Model.EventLootDetails)
+            {
+                <tr>
+                    <td>@lootDetail.ItemName</td>
+                    <td>@lootDetail.ItemWinner</td>
+                    <td>@lootDetail.WinningDkpSpent</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (Model.Event.CreatorUserId == currentUserId)
+    {
+        <!-- End Event Button -->
+        <div class="d-flex justify-content-end mt-5">
+            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#endEventModal" onclick="updateEndEventValues()">
+                End Event
+            </button>
+        </div>
+    }
+</div>
+
+
+
+<!-- End Event Modal -->
+<div class="modal fade" id="endEventModal" tabindex="-1" role="dialog" aria-labelledby="endEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="endEventModalLabel">End Event</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form asp-action="EndEvent" asp-controller="Event" method="post">
+                    <input type="hidden" name="eventId" value="@Model.Event.Id" />
+                    <input type="hidden" name="eventDkp" id="eventDkp" value="@globalDkp" />
+                    <input type="hidden" name="eventDuration" id="eventDuration" value="@totalGlobalHours" />
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Character Name</th>
+                                <th>Job</th>
+                                <th>Sub Job</th>
+                                <th>Job Type</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Duration</th>
+                                <th>DKP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var userEvent in Model.AppUserEvents.Where(aue => aue.IsVerified == true || !aue.IsQuickJoin))
+                            {
+                                <tr>
+                                    <td>@userEvent.CharacterName</td>
+                                    <td>@userEvent.JobName</td>
+                                    <td>@userEvent.SubJobName</td>
+                                    <td>@userEvent.JobType</td>
+                                    @* START TIME *@
+                                    <td>@userEvent.StartTime?.ToString("MM/dd/yyyy h:mm:ss tt")</td>
+                                    @* END TIME *@
+                                    <td><span id="endTime-@userEvent.CharacterName"></span></td>
+                                    @* DURATION *@
+                                    <td>
+                                        <span id="duration-@userEvent.CharacterName"></span>
+                                        <input type="hidden" name="durationValues[@userEvent.CharacterName]" id="durationValue-@userEvent.CharacterName" />
+                                    </td>
+                                    @* DKP *@
+                                    <td>
+                                        <span id="end-event-dkp-@userEvent.CharacterName"></span>
+                                        <input type="hidden" name="dkpValues[@userEvent.CharacterName]" id="dkpValue-@userEvent.CharacterName" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function toggleLootForm() {
+        var form = document.getElementById("lootDetailsForm");
+        if (form.style.display === "none") {
+            form.style.display = "block";
+        } else {
+            form.style.display = "none";
+        }
+    }
+
+    function roundToNearestQuarter(value) {
+        return Math.round(value * 4) / 4;
+    }
+
+    function updateEndEventValues() {
+        var currentTime = new Date();
+        var commencementStartTime = new Date("@Model.CommencementStartTime?.ToString("yyyy-MM-ddTHH:mm:ss")");
+
+        console.log("Current Time:", currentTime);
+        console.log("Commencement Start Time:", commencementStartTime);
+
+        var globalDuration = (currentTime - commencementStartTime) / (1000 * 60 * 60); // Duration in hours
+        console.log("Global Duration (hours):", globalDuration);
+
+        var roundedGlobalHours = roundToNearestQuarter(globalDuration); // Use the same rounding logic
+        console.log("Rounded Global Hours:", roundedGlobalHours);
+
+        var dkpPerHour = @Model.Event.DkpPerHour ?? 0;
+        console.log("DKP Per Hour:", dkpPerHour);
+
+        var globalDkp = roundedGlobalHours * dkpPerHour; // Calculate global DKP
+        console.log("Global DKP:", globalDkp);
+
+        document.getElementById("eventDkp").value = globalDkp;
+        document.getElementById("eventDuration").value = roundedGlobalHours;
+
+        @foreach (var userEvent in Model.AppUserEvents.Where(aue => aue.IsVerified == true || !aue.IsQuickJoin))
+        {
+            <text>
+            var startTime = new Date("@userEvent.StartTime?.ToString("yyyy-MM-ddTHH:mm:ss")");
+            console.log("Start Time for @userEvent.CharacterName:", startTime);
+
+            var endTime = currentTime;
+            var duration = (endTime - startTime) / (1000 * 60 * 60); // Duration in hours
+            console.log("Duration for @userEvent.CharacterName (hours):", duration);
+
+            var roundedDuration = roundToNearestQuarter(duration); // Use the same rounding logic
+            console.log("Rounded Duration for @userEvent.CharacterName (hours):", roundedDuration);
+
+            var totalHours = Math.floor(roundedDuration);
+            var totalMinutes = Math.floor((roundedDuration % 1) * 60);
+            var durationStr = totalHours + "hr" + totalMinutes + "m";
+            console.log("Duration String for @userEvent.CharacterName:", durationStr);
+
+            var dkp = roundedDuration * dkpPerHour; // Calculate DKP
+            console.log("DKP for @userEvent.CharacterName:", dkp);
+
+            document.getElementById("endTime-@userEvent.CharacterName").textContent = endTime.toLocaleString();
+            document.getElementById("duration-@userEvent.CharacterName").textContent = durationStr;
+            document.getElementById("durationValue-@userEvent.CharacterName").value = roundedDuration;
+            document.getElementById("end-event-dkp-@userEvent.CharacterName").textContent = dkp;
+            document.getElementById("dkpValue-@userEvent.CharacterName").value = dkp;
+            </text>
+        }
+    }
+    
+    // Job arrays for different groups
+    var tankJobs = ['Any Tank', 'PLD', 'NIN', 'WAR'];
+    var healJobs = ['Any Heal', 'WHM', 'RDM', 'SMN'];
+    var supportJobs = ['Any Support', 'RDM', 'BRD', 'SMN'];
+    var dpsJobs = ['Any Dps', 'WAR', 'MNK', 'BLM', 'THF', 'DRK', 'BST', 'RNG', 'SAM', 'DRG', 'NIN', 'SMN'];
+
+    // Sub-job arrays for different groups
+    var tankSub = ['Any Sub', 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN'];
+    var healSub = ['Any Sub', 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN'];
+    var supportSub = ['Any Sub', 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN'];
+    var dpsSub = ['Any Sub', 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN'];
+
+    // Function to show jobs based on selected group
+    function showJobs(group) {
+        document.getElementById('selectedGroup').style.display = 'block';
+        document.getElementById('groupTitle').innerText = group + ' Jobs';
+        var jobSelect = document.getElementById('jobSelect');
+        var subJobSelect = document.getElementById('jobSubJob');
+        var jobTypeInput = document.getElementById('jobType');
+        
+        jobSelect.innerHTML = '';
+        subJobSelect.innerHTML = '';
+        jobTypeInput.value = group;
+
+        var jobs, subJobs;
+        switch(group) {
+            case 'Tank':
+                jobs = tankJobs;
+                subJobs = tankSub;
+                break;
+            case 'Heal':
+                jobs = healJobs;
+                subJobs = healSub;
+                break;
+            case 'Support':
+                jobs = supportJobs;
+                subJobs = supportSub;
+                break;
+            case 'DPS':
+                jobs = dpsJobs;
+                subJobs = dpsSub;
+                break;
+            default:
+                jobs = [];
+                subJobs = [];
+        }
+
+        // Populate job and sub-job select options
+        jobs.forEach(function(job) {
+            var option = document.createElement('option');
+            option.value = job;
+            option.text = job;
+            jobSelect.appendChild(option);
+        });
+
+        subJobs.forEach(function(subJob) {
+            var option = document.createElement('option');
+            option.value = subJob;
+            option.text = subJob;
+            subJobSelect.appendChild(option);
+        });
+
+        // Enable the Quick Join button
+        document.getElementById('quickJoinButton').disabled = false;
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var commencementStartTime = new Date("@commencementStartTime?.ToString("yyyy-MM-ddTHH:mm:ss")");
+        console.log("Commencement Start Time:", commencementStartTime);
+
+        function updateProgressBars() {
+            var currentTime = new Date();
+
+            @foreach (var appUserEvent in Model.AppUserEvents)
+            {
+                <text>
+                var startTime = new Date("@appUserEvent.StartTime?.ToString("yyyy-MM-ddTHH:mm:ss")");
+                var elapsedTime = currentTime - startTime;
+                var elapsedHours = elapsedTime / (1000 * 60 * 60);
+
+                var progress = (elapsedHours % 1) * 100; // Reset progress after 1 hour
+                document.getElementById("progress-bar-@appUserEvent.CharacterName").style.width = progress + "%";
+                document.getElementById("progress-bar-@appUserEvent.CharacterName").setAttribute("aria-valuenow", progress);
+                </text>
+            }
+        }
+
+        function updateGlobalTimer() {
+            var currentTime = new Date();
+            console.log("Current Time:", currentTime);
+
+            var elapsedTime = currentTime - commencementStartTime;
+            console.log("Elapsed Time (ms):", elapsedTime);
+
+            var hours = Math.floor(elapsedTime / (1000 * 60 * 60));
+            var minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+            var seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+
+            document.getElementById("global-timer").textContent =
+                String(hours).padStart(2, '0') + ":" +
+                String(minutes).padStart(2, '0') + ":" +
+                String(seconds).padStart(2, '0');
+        }
+
+        function updateIndividualTimers() {
+            var currentTime = new Date();
+
+            @foreach (var appUserEvent in Model.AppUserEvents)
+            {
+                <text>
+                var startTime = new Date("@appUserEvent.StartTime?.ToString("yyyy-MM-ddTHH:mm:ss")");
+                var elapsedTime = currentTime - startTime;
+
+                var hours = Math.floor(elapsedTime / (1000 * 60 * 60));
+                var minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+
+                document.getElementById("timer-@appUserEvent.CharacterName").textContent =
+                    String(hours).padStart(2, '0') + ":" +
+                    String(minutes).padStart(2, '0') + ":" +
+                    String(seconds).padStart(2, '0');
+                </text>
+            }
+        }
+
+        function updateDkp() {
+            var currentTime = new Date();
+            var dkpPerHour = @Model.Event.DkpPerHour ?? 0;
+
+            @foreach (var appUserEvent in Model.AppUserEvents)
+            {
+                <text>
+                var startTime = new Date("@appUserEvent.StartTime?.ToString("yyyy-MM-ddTHH:mm:ss")");
+                var elapsedTime = currentTime - startTime;
+                var elapsedHours = elapsedTime / (1000 * 60 * 60);
+
+                var dkp = elapsedHours * dkpPerHour;
+                var roundedDkp = Math.round(dkp * 4) / 4; // Round to the nearest quarter
+                var dkpElement = document.getElementById("dkp-@appUserEvent.CharacterName");
+                dkpElement.textContent = roundedDkp.toFixed(2);
+                dkpElement.classList.remove("hidden-dkp"); // Remove the hidden class
+                </text>
+            }
+        }
+
+        setInterval(updateProgressBars, 1000); // Update progress bars every second
+        setInterval(updateGlobalTimer, 1000); // Update global timer every second
+        setInterval(updateIndividualTimers, 1000); // Update individual timers every second
+        setInterval(updateDkp, 1000); // Update DKP every second
+    });
+</script>

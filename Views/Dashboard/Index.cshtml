@@ -1,0 +1,576 @@
+﻿@using System.Security.Claims;
+@using LinkshellManager.ViewModels
+@using System.IO;
+@model DashboardViewModel
+
+@* Global Variables *@
+@{
+    // Get the user ID from the Identity
+    var userIdFromIdentity = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    // Get the start of the current week
+    var today = DateTime.Today;
+    var currentDayOfWeek = (int)today.DayOfWeek;
+    var StartOfCurrentWeek = today.AddDays(-currentDayOfWeek);
+
+
+}
+
+<style>
+    .post-item {
+        margin-bottom: 10px;
+    }
+    .post-item-content {
+        display: flex;
+        align-items: center;
+    }
+    .post-item img {
+        margin-right: 10px;
+    }
+    .post-item p {
+        margin: 0;
+        margin-left: 0 !important; /* Override the existing margin-left */
+    }
+</style>
+
+<!-- ======= Main ======= -->
+<main id="main" class="main">
+  <!-- Page Title -->
+  <div class="pagetitle">
+    <h1>Dashboard</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="">Home</a></li>
+        <li class="breadcrumb-item active">Dashboard</li>
+      </ol>
+    </nav>
+  </div>
+  <!-- End Page Title -->
+
+  <section class="section dashboard">
+      <div class="row">
+
+    <!-- Dropdown for selecting Linkshell -->
+    @* <div class="col-12 mb-3">
+        <form method="get" asp-action="Index">
+            <div class="form-group">
+                <label for="linkshellId">Select Linkshell</label>
+                <select id="linkshellId" name="linkshellId" class="form-control" onchange="this.form.submit()">
+                    <option value="@Model.SelectedLinkshellId">All Linkshells</option>
+                    @foreach (var linkshell in Model.Linkshells)
+                    {
+                        <option value="@linkshell.Id" selected="@(linkshell.Id == Model.SelectedLinkshellId ? "selected" : null)">
+                            @linkshell.LinkshellName
+                        </option>
+                    }
+                </select>
+            </div>
+        </form>
+    </div> *@
+
+        <!-- Middle column -->
+        <div class="col-lg-8">
+          <div class="row">
+
+            <!-- Recent Announcements -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title text-center">Recent Announcements</h5>
+                        @if (Model.RecentAnnouncements != null && Model.RecentAnnouncements.Any())
+                        {
+                        <div class="d-flex justify-content-around">
+                            @foreach (var announcement in Model.RecentAnnouncements)
+                            {
+                                <div class="post-item border rounded p-3 mb-3">
+                                    <h6 class="fw-bold">@announcement.AnnouncementTitle</h6>
+                                    <p class="mb-0">@announcement.AnnouncementDetails</p>
+                                </div>
+                            }
+                        </div>
+                        }
+                        else
+                        {
+                            <p class="text-center">No recent announcements found.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!-- End Recent Announcements -->
+    
+            <!-- Members Card -->
+            <div class="col-xxl-4 col-md-6">
+              <div class="card info-card customers-card">
+                <div class="card-body">
+                  <h5 class="card-title">Total Members</h5>
+    
+                  <div class="d-flex align-items-center">
+                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="bi bi-people"></i>
+                    </div>
+                    <div class="ps-3">
+                      <div class="ps-3">
+                        <h6>@Model.TotalMembers</h6>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- End Members Card -->
+    
+            <!-- New Items Card -->
+            <div class="col-xxl-4 col-md-6">
+              <div class="card info-card sales-card">    
+                <div class="card-body">
+                  <h5 class="card-title">Total Items</h5>
+    
+                  <div class="d-flex align-items-center">
+                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="bi bi-cart"></i>
+                    </div>
+                      <div class="ps-3">
+                        <div class="ps-3">
+                          <h6>@Model.TotalItems</h6>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+    
+              </div>
+            </div>
+            <!-- End New Items Card -->
+    
+            <!-- Revenue Card -->
+            <div class="col-xxl-4 col-md-6">
+                <div class="card info-card revenue-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Revenue</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-currency-dollar"></i>
+                            </div>
+                            <div class="ps-3">
+                                <div class="ps-3">
+                                    <h6>@Model.Revenue.ToString("N0")</h6> <!-- Format the revenue with commas -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End Revenue Card -->
+  
+            <!-- Linkshell Roster -->
+            <div class="col-12">
+                <div class="card recent-sales overflow-auto">
+                    <div class="card-body">
+                        <h5 class="card-title">Linkshell Roster </h5>
+
+                        <table class="table table-borderless datatable">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Character Name</th>
+                                    <th scope="col">Rank</th>
+                                    <th scope="col">DKP</th>
+                                    <th scope="col">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Members != null && Model.Members.Any())
+                                {
+                                    int index = 1;
+                                    foreach (var member in Model.Members)
+                                    {
+                                        <tr>
+                                            <th scope="row"><a href="#">@index</a></th>
+                                            <td>@member.CharacterName</td>
+                                            <td><a href="#" class="text-primary">@member.Rank</a></td>
+                                            <td>@member.LinkshellDkp</td>
+                                            <td><span class="badge @(member.Status == "Active" ? "bg-success" : "bg-warning")">@member.Status</span></td>
+                                        </tr>
+                                        index++;
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <div class="text-center">
+                                            <td colspan="5">No members found.</td>
+                                        </div>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- End Linkshell Roster -->
+
+            <!-- Reports -->
+            <div class="col-12">
+                <div class="card" style="padding-top: 15px;">
+                    <div id="columnChart"></div>
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    var membersData = @Html.Raw(Json.Serialize(ViewBag.MembersData));
+                    var itemsData = @Html.Raw(Json.Serialize(ViewBag.ItemsData));
+                    var revenueData = @Html.Raw(Json.Serialize(ViewBag.RevenueData));
+                    var months = @Html.Raw(Json.Serialize(ViewBag.Months));
+
+                    console.log("Members Data:", membersData);
+                    console.log("Items Data:", itemsData);
+                    console.log("Revenue Data:", revenueData);
+                    console.log("Months:", months);
+
+                    var options = {
+                        series: [{
+                            name: 'Members',
+                            data: membersData
+                        }, {
+                            name: 'Items',
+                            data: itemsData
+                        }, {
+                            name: 'Revenue',
+                            data: revenueData // Use scaled revenue data
+                        }],
+                        chart: {
+                            type: 'bar',
+                            height: 350
+                        },
+                        colors: ['#FFA500', '#0000FF', '#008000'], // Orange for Members, Blue for Items, Green for Revenue
+                        title: {
+                            text: 'Reports',
+                            align: 'left',
+                            offsetX: 10,
+                            style: {
+                                fontSize: '18px',
+                                fontWeight: 'normal',
+                                fontFamily: 'Poppins, sans-serif',
+                                color: '#012970'
+                            }
+                        },
+                        plotOptions: {
+                            bar: {
+                                horizontal: false,
+                                columnWidth: '25%',
+                                endingShape: 'rounded'
+                            },
+                        },
+                        dataLabels: {
+                            enabled: false
+                        },
+                        stroke: {
+                            show: true,
+                            width: 2,
+                            colors: ['transparent']
+                        },
+                        xaxis: {
+                            categories: months,
+                        },
+                        yaxis: {
+                            labels: {
+                                formatter: function(val) {
+                                    return val.toFixed(1);
+                                }
+                            }
+                        },
+                        fill: {
+                            opacity: 1
+                        },
+                        tooltip: {
+                            y: {
+                                formatter: function(val, { seriesIndex }) {
+                                    if (seriesIndex === 2) { // Revenue series index
+                                        return "$ " + Math.round(val) + " million"; // Remove decimal places
+                                    }
+                                    return Math.round(val); // Remove decimal places
+                                }
+                            }
+                        }
+                    };
+
+                    var columnChart = new ApexCharts(document.querySelector("#columnChart"), options);
+                    columnChart.render();
+                });
+            </script>
+            <!-- End Reports -->
+    
+            <!-- Recent Sales -->
+            <div class="col-12">
+              <div class="card recent-sales overflow-auto">
+    
+                <div class="card-body">
+                  <h5 class="card-title">Recent Sales</h5>
+    
+                  <table class="table table-borderless datatable">
+                    <thead>
+                      <tr>
+                        <th scope="col">Item #</th>
+                        <th scope="col">Member</th>
+                        <th scope="col">Item</th>
+                        <th scope="col">DKP</th>
+                        <th scope="col">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @if (Model.RecentSales != null && Model.RecentSales.Any())
+                      {
+                          foreach (var sale in Model.RecentSales)
+                          {
+                              foreach (var item in sale.AuctionItems)
+                              {
+                                  <tr>
+                                      <th scope="row"><a href="#">@item.Id</a></th>
+                                      <td>@sale.CreatedBy</td>
+                                      <td><a href="#" class="text-primary">@item.ItemName</a></td>
+                                      <td>@item.EndingBidDkp</td>
+                                      <td><span class="badge @(item.Status == "Approved" ? "bg-success" : "bg-warning")">@item.Status</span></td>
+                                  </tr>
+                              }
+                          }
+                      }
+                      else
+                      {
+                          <tr>
+                              <td colspan="5">No recent sales found.</td>
+                          </tr>
+                      }
+                    </tbody>
+                  </table>
+    
+                </div>
+    
+              </div>
+            </div>
+            <!-- End Recent Sales -->
+
+          </div>
+        </div>
+        <!-- End Middle column -->
+    
+        <!-- Right side columns -->
+        <div class="col-lg-4">
+
+<!-- Recent Activity -->
+<div class="col-12">
+    <div class="card recent-sales overflow-auto">
+        <div class="card-body">
+            <h5 class="card-title">Recent Activity</h5>
+            <div class="activity" style="max-height: 300px; overflow-y: auto;">
+                @foreach (var tod in Model.Tods)
+                {
+                    var timeSpan = DateTime.UtcNow - tod.TimeStamp.Value;
+                    var days = timeSpan.Days;
+                    var hours = timeSpan.Hours;
+                    var minutes = timeSpan.Minutes;
+
+                    <div class="activity-item d-flex">
+                        <div class="activite-label">@($"{days}d {hours}h {minutes}m")</div>
+                        <i class='bi bi-circle-fill activity-badge text-success align-self-start'></i>
+                        <div class="activity-content">
+                            @tod.MonsterName <a href="#" class="fw-bold text-dark">Defeated</a> @(tod.Claim ? "Ours" : "No Claim")
+                        </div>
+                    </div><!-- End activity item-->
+                }
+
+                @foreach (var evt in Model.Events)
+                {
+                    var timeSpan = DateTime.UtcNow - evt.TimeStamp.Value;
+                    var days = timeSpan.Days;
+                    var hours = timeSpan.Hours;
+                    var minutes = timeSpan.Minutes;
+
+                    <div class="activity-item d-flex">
+                        <div class="activite-label">@($"{days}d {hours}h {minutes}m")</div>
+                        <i class='bi bi-circle-fill activity-badge text-primary align-self-start'></i>
+                        <div class="activity-content">
+                            @if (evt.CommencementStartTime.HasValue)
+                            {
+                                <p class="text-center">
+                                    @evt.EventName - <span style="color: #32CD32; text-shadow: 0 0 3px #32CD32, 0 0 5px #32CD32;">LIVE</span>
+                                </p>
+                            }
+                            else
+                            {
+                                @evt.EventName
+                            }
+                        </div>
+                    </div><!-- End activity item-->
+                }
+
+                @foreach (var evtHistory in Model.EventHistories)
+                {
+                    var timeSpan = DateTime.UtcNow - evtHistory.TimeStamp.Value;
+                    var days = timeSpan.Days;
+                    var hours = timeSpan.Hours;
+                    var minutes = timeSpan.Minutes;
+
+                    <div class="activity-item d-flex">
+                        <div class="activite-label">@($"{days}d {hours}h {minutes}m")</div>
+                        <i class='bi bi-circle-fill activity-badge text-info align-self-start'></i>
+                        <div class="activity-content">
+                        @evtHistory.EventName
+                        </div>
+                    </div><!-- End activity item-->
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Recent Activity -->
+    
+            <!-- HNM Claims Combined -->
+            <div class="card">
+                <!-- Doughnut Chart Combined -->
+                <div id="donutChartCombined" style="padding-top: 15px;"></div>
+                <!-- End Doughnut Chart Combined -->
+            </div>
+
+            <!-- HNM Claims 3 -->
+            <div class="card">
+                <!-- Doughnut Chart 3 -->
+                <div id="donutChart3" style="padding-top: 15px;"></div>
+                <!-- End Doughnut Chart 3 -->
+            </div>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    var optionsCombined = {
+                        series: @Html.Raw(Json.Serialize(new List<double> {
+                            Model.HnmClaimsPercentages["Adamantoise"],
+                            Model.HnmClaimsPercentages["Behemoth"],
+                            Model.HnmClaimsPercentages["Fafnir"],
+                            Model.HnmClaimsPercentages["Aspidochelone"],
+                            Model.HnmClaimsPercentages["King Behemoth"],
+                            Model.HnmClaimsPercentages["Nidhogg"]
+                        })),
+                        chart: {
+                            height: 350,
+                            type: 'pie',
+                            toolbar: {
+                                show: true
+                            }
+                        },
+                        colors: ['#5fe897', '#8f4cff', '#9f6b6b', '#127539', '#3a1475', '#452f2f'],
+                        title: {
+                            text: 'HNM Claims (NQ/HQ)',
+                            align: 'left',
+                            offsetX: 10,
+                            style: {
+                                fontSize: '18px',
+                                fontWeight: 'normal',
+                                fontFamily: 'Poppins, sans-serif',
+                                color: '#012970'
+                            }
+                        },
+                        labels: ['Adamantoise', 'Behemoth', 'Fafnir', 'Aspidochelone', 'King Behemoth', 'Nidhogg']
+                    };
+
+                    var options3 = {
+                        series: @Html.Raw(Json.Serialize(new List<double> {
+                            Model.HnmClaimsPercentages["Tiamat"],
+                            Model.HnmClaimsPercentages["Jormungand"],
+                            Model.HnmClaimsPercentages["Vrtra"]
+                        })),
+                        chart: {
+                            height: 350,
+                            type: 'pie',
+                            toolbar: {
+                                show: true
+                            }
+                        },
+                        colors: ['#db7710', '#3b94d3', '#62696e'],
+                        title: {
+                            text: 'HNM Claims (Wyrms)',
+                            align: 'left',
+                            offsetX: 10,
+                            style: {
+                                fontSize: '18px',
+                                fontWeight: 'normal',
+                                fontFamily: 'Poppins, sans-serif',
+                                color: '#012970'
+                            }
+                        },
+                        labels: ['Tiamat', 'Jormungand', 'Vrtra']
+                    };
+
+                    var donutChartCombined = new ApexCharts(document.querySelector("#donutChartCombined"), optionsCombined);
+                    donutChartCombined.render();
+
+                    var donutChart3 = new ApexCharts(document.querySelector("#donutChart3"), options3);
+                    donutChart3.render();
+                });
+            </script>
+            <!-- End HNM Claims -->
+
+            <!-- News & Updates -->
+            <div class="card">    
+                <div class="card-body pb-0">
+                    <h5 class="card-title mb-4">News &amp; Updates </h5>
+                    <div class="news" style="max-height: 390px; overflow-y: auto;">
+                        @foreach (var tod in Model.Tods.Where(t => t.Claim && t.TodLootDetails.Any()))
+                        {
+                            var imageName = tod.MonsterName.Replace(" ", "");
+                            var imagePath = ((HashSet<string>)ViewBag.ImageFiles)
+                                .FirstOrDefault(path => System.IO.Path.GetFileNameWithoutExtension(path).Equals(imageName, StringComparison.OrdinalIgnoreCase));
+                            <div class="post-item clearfix mb-3">
+                                <h4 class="mb-3" style="font-size: 16px; margin-left: 50px;"><a href="#">@tod.MonsterName Defeated</a></h4>
+                                @if (imagePath != null)
+                                {
+                                    <img src="~/@imagePath" alt="">
+                                }
+                                @foreach (var loot in tod.TodLootDetails)
+                                {
+                                    <div class="post-item-content">
+                                        <p>@loot.ItemName → @loot.ItemWinner (@loot.WinningDkpSpent DKP)</p>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @foreach (var evt in Model.Events.Where(e => e.EventLootDetails.Any()))
+                        {
+                            var eventImageName = evt.EventType.Replace(" ", "");
+                            var eventImagePath = ((HashSet<string>)ViewBag.ImageFiles)
+                                .FirstOrDefault(path => System.IO.Path.GetFileNameWithoutExtension(path).Equals(eventImageName, StringComparison.OrdinalIgnoreCase));
+
+                            <div class="post-item clearfix">
+                                <h4 class="mb-3 mt-4" style="font-size: 16px; margin-left: 50px;"><a href="#">@evt.EventName</a></h4>
+                                @foreach (var loot in evt.EventLootDetails)
+                                {
+                                    // Check if any loot item name contains the image name
+                                    string matchingLootImagePath = ((HashSet<string>)ViewBag.ImageFiles)
+                                        .FirstOrDefault(path => loot.ItemName.Contains(System.IO.Path.GetFileNameWithoutExtension(path), StringComparison.OrdinalIgnoreCase));
+
+                                    <div class="post-item-content mb-3">
+                                        @if (eventImagePath != null || matchingLootImagePath != null)
+                                        {
+                                            var imagePathToUse = eventImagePath ?? matchingLootImagePath;
+                                            <img src="~/@imagePathToUse" alt="">
+                                        }
+                                        else
+                                        {
+                                            @* <img src="~/NewItem.png" alt=""> *@
+                                            <img style="max-height: 80px" src="~/ffxi_assets/Other/NewItem.png" alt="">
+                                        }
+                                        <p>@loot.ItemName → @loot.ItemWinner (@loot.WinningDkpSpent DKP)</p>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!-- End News & Updates -->
+        </div>
+        <!-- End Right side columns -->
+    
+      </div>
+  </section>
+</main>
+<!-- ======= End Main ======= -->

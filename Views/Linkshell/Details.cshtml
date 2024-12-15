@@ -1,0 +1,26 @@
+﻿@model LinkshellManager.Models.Linkshell
+
+@{
+    ViewData["Title"] = "Details";
+}
+<div class="container" style="max-width: 90%; margin: 0 auto;">
+    <h2 class="my-5">Details</h2>
+
+    <div>
+        <h4>Linkshell</h4>
+        <hr />
+        <dl class="row">
+            <dt class="col-sm-2">
+                @Html.DisplayNameFor(model => model.LinkshellName)
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.LinkshellName)
+            </dd>
+            <!-- Add other fields as needed -->
+        </dl>
+    </div>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a> |
+        <a asp-action="Index">Back to List</a>
+    </div>
+</div>

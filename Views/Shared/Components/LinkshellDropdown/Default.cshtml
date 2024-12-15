@@ -1,0 +1,37 @@
+﻿@model LinkshellManager.ViewModels.SettingsViewModel
+
+<!-- Dropdown for selecting Linkshell -->
+@* <div class="col-12">
+    <form method="post" asp-action="SetPrimaryLinkshell" asp-controller="Account">
+        <div class="form-group text-center">
+            <label for="linkshellId">Primary Linkshell</label>
+            <select id="linkshellId" name="SelectedLinkshellId" class="form-control text-center" onchange="this.form.submit()">
+                <option value="">All Linkshells</option>
+                @foreach (var linkshell in Model.Linkshells)
+                {
+                    <option value="@linkshell.Id" selected="@(linkshell.Id == Model.SelectedLinkshellId ? "selected" : null)">
+                        @linkshell.LinkshellName
+                    </option>
+                }
+            </select>
+        </div>
+    </form>
+</div> *@
+
+<!-- Dropdown for selecting Linkshell READ ONLY-->
+<div class="col-12">
+    <form method="post" asp-action="SetPrimaryLinkshell" asp-controller="Account">
+        <div class="form-group text-center">
+            <label for="linkshellId">Primary Linkshell</label>
+            <select id="linkshellId" name="SelectedLinkshellId" class="form-control text-center" disabled>
+                <option value="">All Linkshells</option>
+                @foreach (var linkshell in Model.Linkshells)
+                {
+                    <option value="@linkshell.Id" selected="@(linkshell.Id == Model.SelectedLinkshellId ? "selected" : null)">
+                        @linkshell.LinkshellName
+                    </option>
+                }
+            </select>
+        </div>
+    </form>
+</div>

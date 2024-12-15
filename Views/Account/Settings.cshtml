@@ -1,0 +1,30 @@
+﻿@model LinkshellManager.ViewModels.SettingsViewModel
+
+@{
+    ViewData["Title"] = "Profile";
+}
+<div class="container" style="max-width: 90%; margin: 0 auto;">
+    <div class="text-center">
+        <h2 class="pt-5 my-5">Account Settings</h2>
+    </div>
+
+    <h2 class="pt-5 my-5">Set Primary Linkshell</h2>
+
+    <!-- Dropdown for selecting Linkshell -->
+    <div class="col-12 mb-3">
+        <form method="post" asp-action="SetPrimaryLinkshell">
+            <div class="form-group">
+                <label for="linkshellId">Select Linkshell</label>
+                <select id="linkshellId" name="SelectedLinkshellId" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Linkshells</option>
+                    @foreach (var linkshell in Model.Linkshells)
+                    {
+                        <option value="@linkshell.Id" selected="@(linkshell.Id == Model.SelectedLinkshellId ? "selected" : null)">
+                            @linkshell.LinkshellName
+                        </option>
+                    }
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
